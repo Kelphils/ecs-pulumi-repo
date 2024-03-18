@@ -81,7 +81,7 @@ jobs:
       - name: Build and push the tagged docker image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ needs.infrastructure-setup.aws-configure.REPOSITORY_URL }}
+          ECR_REPOSITORY: ${{ needs.infrastructure-setup.aws-configure.REGISTRY_NAME }}
           IMAGE_TAG: ${{ github.sha }}
           TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.aws-configure.TASK_DEFINITION_NAME }}
           RDS_ENDPOINT: ${{ needs.infrastructure-setup.aws-configure.RDS_ENDPOINT }}
