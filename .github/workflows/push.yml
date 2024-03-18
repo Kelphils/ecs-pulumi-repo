@@ -23,9 +23,11 @@ jobs:
       - uses: pulumi/actions@v3
         with:
           command: |
-            destroy
+            up
           pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
           stack-name: dev # When using an individual account, only use stack-name.
           expect-no-changes: true # When using an individual account, only use stack-name.
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+
