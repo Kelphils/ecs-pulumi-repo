@@ -33,16 +33,25 @@ jobs:
           pulumi preview
           pulumi up --yes
 
-      # Export stack outputs as environment variables
+      # Export stack outputs to environment files
       - name: Export Pulumi outputs
         run: |
-          echo "::set-env name=TASK_DEFINITION_NAME::$(pulumi stack output task_definition_name)"
-          echo "::set-env name=REPOSITORY_URL::$(pulumi stack output repository_url)"
-          echo "::set-env name=RDS_ENDPOINT::$(pulumi stack output rds_endpoint)"
-          echo "::set-env name=SERVICE_NAME::$(pulumi stack output service_name)"
-          echo "::set-env name=CLUSTER_NAME::$(pulumi stack output cluster_name)"
-          echo "::set-env name=REGISTRY_NAME::$(pulumi stack output registry_name)"
-          echo "::set-env name=ECS_ENDPOINT::$(pulumi stack output ecs_endpoint)"
+          echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> pulumi.env
+          echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> pulumi.env
+          echo "RDS_ENDPOINT=$(pulumi stack output rds_endpoint)" >> pulumi.env
+          echo "SERVICE_NAME=$(pulumi stack output service_name)" >> pulumi.env
+          echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> pulumi.env
+          echo "REGISTRY_NAME=$(pulumi stack output registry_name)" >> pulumi.env
+          echo "ECS_ENDPOINT=$(pulumi stack output ecs_endpoint)" >> pulumi.env
+
+          # Store outputs in GitHub Actions environment file
+          echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> $GITHUB_ENV
+          echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> $GITHUB_ENV
+          echo "RDS_ENDPOINT=$(pulumi stack output rds_endpoint)" >> $GITHUB_ENV
+          echo "SERVICE_NAME=$(pulumi stack output service_name)" >> $GITHUB_ENV
+          echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> $GITHUB_ENV
+          echo "REGISTRY_NAME=$(pulumi stack output registry_name)" >> $GITHUB_ENV
+          echo "ECS_ENDPOINT=$(pulumi stack output ecs_endpoint)" >> $GITHUB_ENV
           
       # - name: Install Pulumi
       #   run: |
@@ -59,6 +68,7 @@ jobs:
 
   docker-build-push:
     name: docker-build-push
+    needs: infrastructure-setup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
