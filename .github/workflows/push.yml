@@ -32,7 +32,7 @@ jobs:
           source env/bin/activate
           pulumi stack select dev
           pulumi preview
-          pulumi up --yes --skip-preview --color auto
+          pulumi destoy --yes
           
       # - name: Install Pulumi
       #   run: |
