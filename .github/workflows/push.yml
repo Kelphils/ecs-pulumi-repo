@@ -32,6 +32,17 @@ jobs:
           pip install -r requirements.txt
           pulumi preview
           pulumi up --yes
+
+      # Export stack outputs as environment variables
+      - name: Export Pulumi outputs
+        run: |
+          echo "::set-env name=TASK_DEFINITION_NAME::$(pulumi stack output task_definition_name)"
+          echo "::set-env name=REPOSITORY_URL::$(pulumi stack output repository_url)"
+          echo "::set-env name=RDS_ENDPOINT::$(pulumi stack output rds_endpoint)"
+          echo "::set-env name=SERVICE_NAME::$(pulumi stack output service_name)"
+          echo "::set-env name=CLUSTER_NAME::$(pulumi stack output cluster_name)"
+          echo "::set-env name=REGISTRY_NAME::$(pulumi stack output registry_name)"
+          echo "::set-env name=ECS_ENDPOINT::$(pulumi stack output ecs_endpoint)"
           
       # - name: Install Pulumi
       #   run: |
@@ -45,42 +56,44 @@ jobs:
       #   env:
       #     PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
-# name: Pulumi
-# on:
-#   push:
-#     branches:
-#       - main
-# jobs:
-#   infrastructure-setup:
-#     name: Infrastructure-setup
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: actions/setup-python@v2
-#         with:
-#           python-version: 3.9
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v1
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-region: ${{ secrets.AWS_REGION }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#       - run: |
-#           pip install -r requirements.txt
-#       - uses: pulumi/actions@v3
-#         with:
-#           command: |
-#             destroy
-#           pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
-#           stack-name: dev # When using an individual account, only use stack-name.
-#           expect-no-changes: true # When using an individual account, only use stack-name.
-#         env:
-#           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
+  docker-build-push:
+    name: docker-build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-  # Cypress-Test:
-   
-  
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      #----------------------------------------------
+      # -----  Login to AWS ECR  -----
+      #----------------------------------------------
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push the tagged docker image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ env.REGISTRY_NAME }}
+          ECR_REPOSITORY: ${{ env.REPOSITORY_URL }}
+          IMAGE_TAG: ${{ github.sha }}
+          TASK_DEFINITION_NAME: ${{ env.TASK_DEFINITION_NAME }}
+          REPOSITORY_URL: ${{ env.REPOSITORY_URL }}
+          RDS_ENDPOINT: ${{ env.RDS_ENDPOINT }}
+          SERVICE_NAME: ${{ env.SERVICE_NAME }}
+          CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+          REGISTRY_NAME: ${{ env.REGISTRY_NAME }}
+          ECS_ENDPOINT: ${{ env.ECS_ENDPOINT }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./welcome-app
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
   #   name: Build Docker Image
   #   runs-on: ubuntu-latest  
   #   steps:  
