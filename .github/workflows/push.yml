@@ -26,7 +26,6 @@ jobs:
         with:
           run: |
             preview
-            up
           stack-name: dev # When using an individual account, only use stack-name.
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
