@@ -485,7 +485,7 @@ ecs_service = aws.ecs.Service("appService",
 )
 
 # Ecs Autoscaling Target for CPU
-ecs_target_cpu = aws.appautoscaling.Target("ecs_target_cpu",
+ecs_target = aws.appautoscaling.Target("ecs_target",
     max_capacity=4,
     min_capacity=1,
     resource_id=pulumi.Output.all(cluster.name, ecs_service.name).apply(lambda args: f"service/{args[0]}/{args[1]}"),
@@ -498,8 +498,8 @@ autoscaling_policy_cpu = aws.appautoscaling.Policy("app-scaling-policy_cpu",
     name="ecs-scaling-policy",
     policy_type="TargetTrackingScaling",
     resource_id=pulumi.Output.all(cluster.name, ecs_service.name).apply(lambda args: f"service/{args[0]}/{args[1]}"),
-    scalable_dimension=ecs_target_cpu.scalable_dimension,
-    service_namespace=ecs_target_cpu.service_namespace,
+    scalable_dimension=ecs_target.scalable_dimension,
+    service_namespace=ecs_target.service_namespace,
     target_tracking_scaling_policy_configuration=aws.appautoscaling.PolicyTargetTrackingScalingPolicyConfigurationArgs(
         predefined_metric_specification=aws.appautoscaling.PolicyTargetTrackingScalingPolicyConfigurationPredefinedMetricSpecificationArgs(
             predefined_metric_type="ECSServiceAverageCPUUtilization"
@@ -515,8 +515,8 @@ autoscaling_policy_mem = aws.appautoscaling.Policy("app-scaling-policy_mem",
     name="ecs-scaling-policy",
     policy_type="TargetTrackingScaling",
     resource_id=pulumi.Output.all(cluster.name, ecs_service.name).apply(lambda args: f"service/{args[0]}/{args[1]}"),
-    scalable_dimension=ecs_target_cpu.scalable_dimension,
-    service_namespace=ecs_target_cpu.service_namespace,
+    scalable_dimension=ecs_target.scalable_dimension,
+    service_namespace=ecs_target.service_namespace,
     target_tracking_scaling_policy_configuration=aws.appautoscaling.PolicyTargetTrackingScalingPolicyConfigurationArgs(
         predefined_metric_specification=aws.appautoscaling.PolicyTargetTrackingScalingPolicyConfigurationPredefinedMetricSpecificationArgs(
             predefined_metric_type="ECSServiceAverageMemoryUtilization"
@@ -524,7 +524,8 @@ autoscaling_policy_mem = aws.appautoscaling.Policy("app-scaling-policy_mem",
         target_value=80,
         scale_in_cooldown=300,
         scale_out_cooldown=300,
-    )
+    ),
+    opts=pulumi.ResourceOptions(depends_on=[ecs_target, autoscaling_policy_cpu])
 )
 
 # Outputs
