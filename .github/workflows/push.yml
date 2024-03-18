@@ -33,8 +33,7 @@ jobs:
           pip install -r requirements.txt
           pulumi preview
           pulumi up --yes
-          # Store outputs in GitHub Actions environment file
-          echo "$TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> "$GITHUB_OUTPUT"
+          echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> "$GITHUB_OUTPUT"
           echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> "$GITHUB_OUTPUT"
           echo "RDS_ENDPOINT=$(pulumi stack output rds_endpoint)" >> "$GITHUB_OUTPUT"
           echo "SERVICE_NAME=$(pulumi stack output service_name)" >> "$GITHUB_OUTPUT"
