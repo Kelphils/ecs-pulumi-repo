@@ -8,13 +8,9 @@ jobs:
     name: Infrastructure-setup
     runs-on: ubuntu-latest
     outputs:
-      TASK_DEFINITION_NAME: ${{ steps.pulumi-output.outputs.TASK_DEFINITION_NAME }}
-      REPOSITORY_URL: ${{ steps.pulumi-output.outputs.REPOSITORY_URL }}
-      RDS_ENDPOINT: ${{ steps.pulumi-output.outputs.RDS_ENDPOINT }}
-      SERVICE_NAME: ${{ steps.pulumi-output.outputs.SERVICE_NAME }}
-      CLUSTER_NAME: ${{ steps.pulumi-output.outputs.CLUSTER_NAME }}
-      REGISTRY_NAME: ${{ steps.pulumi-output.outputs.REGISTRY_NAME }}
-      ECS_ENDPOINT: ${{ steps.pulumi-output.outputs.ECS_ENDPOINT }}
+      TASK_DEFINITION_NAME: ${{ steps.task-def.outputs.TASK_DEFINITION_NAME }}
+      REPOSITORY_URL: ${{ steps.repo.outputs.REPOSITORY_URL }}
+      REGISTRY_NAME: ${{ steps.registry.outputs.REGISTRY_NAME }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v5
@@ -41,49 +37,12 @@ jobs:
           pip install -r requirements.txt
           pulumi preview
           pulumi up --yes
-          # Store outputs in GitHub Actions environment file
-          echo "::set-output name=TASK_DEFINITION_NAME::$(pulumi stack output task_definition_name)"
-          echo "::set-output name=REPOSITORY_URL::$(pulumi stack output repository_url)"
-          echo "::set-output name=RDS_ENDPOINT::$(pulumi stack output rds_endpoint)"
-          echo "::set-output name=SERVICE_NAME::$(pulumi stack output service_name)"
-          echo "::set-output name=CLUSTER_NAME::$(pulumi stack output cluster_name)"
-          echo "::set-output name=REGISTRY_NAME::$(pulumi stack output registry_name)"
-          echo "::set-output name=ECS_ENDPOINT::$(pulumi stack output ecs_endpoint)"
-        id: pulumi-output
-
-  docker-build-push:
-    name: docker-build-push
-    needs: infrastructure-setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Build and push the tagged docker image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ needs.infrastructure-setup.outputs.REGISTRY_NAME }}
-          IMAGE_TAG: ${{ github.sha }}
-          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
-          RDS_ENDPOINT: ${{ needs.infrastructure-setup.outputs.RDS_ENDPOINT }}
-          SERVICE_NAME: ${{ needs.infrastructure-setup.outputs.SERVICE_NAME }}
-          CLUSTER_NAME: ${{ needs.infrastructure-setup.outputs.CLUSTER_NAME }}
-          ECS_ENDPOINT: ${{ needs.infrastructure-setup.outputs.ECS_ENDPOINT }}
-        run: |
-          echo $IMAGE_TAG
-          echo $ECR_REPOSITORY
-          echo $ECR_REGISTRY
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./welcome-app
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-
+      - id: task-def
+        run:  echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> "$GITHUB_OUTPUT"
+      - id: repo
+        run:  echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> "$GITHUB_OUTPUT"
+      - id: registry
+        run:  echo "REGISTRY_NAME=$(pulumi stack output registry_name)" >> "$GITHUB_OUTPUT"
           
       # - name: Install Pulumi
       #   run: |
@@ -124,13 +83,9 @@ jobs:
       - name: Build and push the tagged docker image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ needs.infrastructure-setup.aws-configure.REGISTRY_NAME }}
+          ECR_REPOSITORY: ${{ needs.infrastructure-setup.outputs.REGISTRY_NAME }}
           IMAGE_TAG: ${{ github.sha }}
-          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.aws-configure.TASK_DEFINITION_NAME }}
-          RDS_ENDPOINT: ${{ needs.infrastructure-setup.aws-configure.RDS_ENDPOINT }}
-          SERVICE_NAME: ${{ needs.infrastructure-setup.aws-configure.SERVICE_NAME }}
-          CLUSTER_NAME: ${{ needs.infrastructure-setup.aws-configure.CLUSTER_NAME }}
-          ECS_ENDPOINT: ${{ needs.infrastructure-setup.aws-configure.ECS_ENDPOINT }}
+          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
         run: |
           echo $IMAGE_TAG
           echo $ECR_REPOSITORY
