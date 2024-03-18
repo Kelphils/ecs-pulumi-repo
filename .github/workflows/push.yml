@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
       - uses: pulumi/actions@v3
         with:
-          command: |
+          run: |
             preview
             up
           stack-name: dev # When using an individual account, only use stack-name.
