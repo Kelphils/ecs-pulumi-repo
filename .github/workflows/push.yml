@@ -35,23 +35,17 @@ jobs:
 
       # Export stack outputs to environment files
       - name: Export Pulumi outputs
+        id: pulumi-output
         run: |
-          echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> pulumi.env
-          echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> pulumi.env
-          echo "RDS_ENDPOINT=$(pulumi stack output rds_endpoint)" >> pulumi.env
-          echo "SERVICE_NAME=$(pulumi stack output service_name)" >> pulumi.env
-          echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> pulumi.env
-          echo "REGISTRY_NAME=$(pulumi stack output registry_name)" >> pulumi.env
-          echo "ECS_ENDPOINT=$(pulumi stack output ecs_endpoint)" >> pulumi.env
-
           # Store outputs in GitHub Actions environment file
-          echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> $GITHUB_ENV
-          echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> $GITHUB_ENV
-          echo "RDS_ENDPOINT=$(pulumi stack output rds_endpoint)" >> $GITHUB_ENV
-          echo "SERVICE_NAME=$(pulumi stack output service_name)" >> $GITHUB_ENV
-          echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> $GITHUB_ENV
-          echo "REGISTRY_NAME=$(pulumi stack output registry_name)" >> $GITHUB_ENV
-          echo "ECS_ENDPOINT=$(pulumi stack output ecs_endpoint)" >> $GITHUB_ENV
+          echo "$TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> $GITHUB_OUTPUT
+          echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> $GITHUB_OUTPUT
+          echo "RDS_ENDPOINT=$(pulumi stack output rds_endpoint)" >> $GITHUB_OUTPUT
+          echo "SERVICE_NAME=$(pulumi stack output service_name)" >> $GITHUB_OUTPUT
+          echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> $GITHUB_OUTPUT
+          echo "REGISTRY_NAME=$(pulumi stack output registry_name)" >> $GITHUB_OUTPUT
+          echo "ECS_ENDPOINT=$(pulumi stack output ecs_endpoint)" >> $GITHUB_OUTPUT
+
           
       # - name: Install Pulumi
       #   run: |
@@ -91,22 +85,23 @@ jobs:
 
       - name: Build and push the tagged docker image to Amazon ECR
         env:
-          ECR_REGISTRY: ${{ env.REGISTRY_NAME }}
-          ECR_REPOSITORY: ${{ env.REPOSITORY_URL }}
+          ECR_REGISTRY: ${{ steps.pulumi-output.REGISTRY_NAME }}
+          ECR_REPOSITORY: ${{ steps.pulumi-output.REPOSITORY_URL }}
           IMAGE_TAG: ${{ github.sha }}
-          TASK_DEFINITION_NAME: ${{ env.TASK_DEFINITION_NAME }}
-          REPOSITORY_URL: ${{ env.REPOSITORY_URL }}
-          RDS_ENDPOINT: ${{ env.RDS_ENDPOINT }}
-          SERVICE_NAME: ${{ env.SERVICE_NAME }}
-          CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
-          REGISTRY_NAME: ${{ env.REGISTRY_NAME }}
-          ECS_ENDPOINT: ${{ env.ECS_ENDPOINT }}
+          TASK_DEFINITION_NAME: ${{ steps.pulumi-output.TASK_DEFINITION_NAME }}
+          REPOSITORY_URL: ${{ steps.pulumi-output.REPOSITORY_URL }}
+          RDS_ENDPOINT: ${{ steps.pulumi-output.RDS_ENDPOINT }}
+          SERVICE_NAME: ${{ steps.pulumi-output.SERVICE_NAME }}
+          CLUSTER_NAME: ${{ steps.pulumi-output.CLUSTER_NAME }}
+          ECS_ENDPOINT: ${{ steps.pulumi-output.ECS_ENDPOINT }}
         run: |
           echo $IMAGE_TAG
           docker build -t $ECR_REGISTRY ./welcome-app
-          docker tag $ECR_REGISTRY:$IMAGE_TAG $ECR_REPOSITORY/$ECR_REGISTRY:$IMAGE_TAG
-          docker push $ECR_REPOSITORY/$ECR_REGISTRY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY:$IMAGE_TAG $REPOSITORY_URL:$IMAGE_TAG
+          docker push $ECR_REPOSITORY:$IMAGE_TAG
 
+          # docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
   #   name: Build Docker Image
   #   runs-on: ubuntu-latest  
   #   steps:  
