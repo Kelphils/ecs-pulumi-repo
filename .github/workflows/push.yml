@@ -32,7 +32,7 @@ jobs:
           source env/bin/activate
           pulumi stack select dev
           pulumi preview
-          pulumi destoy --yes
+          pulumi destroy --yes
           
       # - name: Install Pulumi
       #   run: |
