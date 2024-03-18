@@ -1,52 +1,4 @@
-# name: Pulumi-Ecs-Setup
-# on:
-#   push:
-#     branches:
-#       - main
-# jobs:
-#   infrastructure-setup:
-#     name: Infrastructure-setup
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: actions/setup-python@v2
-#         with:
-#           python-version: 3.9
-#       - name: Install Pulumi
-#         run: |
-#           curl -fsSL https://get.pulumi.com/ | bash
-#           export PATH=$PATH:$HOME/.pulumi/bin
-#       - name: Pulumi Login
-#         run: pulumi login
-#         env:
-#           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v1
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-region: ${{ secrets.AWS_REGION }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#       - run: |
-#           pip install -r requirements.txt
-#           python3 -m venv env
-#           source env/bin/activate
-#           pulumi stack select dev
-#           pulumi preview
-#           pulumi up --yes --skip-preview --color auto
-          
-#       - name: Install Pulumi
-#         run: |
-
-#         with:
-#           command: |
-#             up
-#           pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
-#           stack-name: dev # When using an individual account, only use stack-name.
-#           expect-no-changes: true # When using an individual account, only use stack-name.
-#         env:
-#           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-
-name: Pulumi
+name: Pulumi-Ecs-Setup
 on:
   push:
     branches:
@@ -60,6 +12,14 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: 3.9
+      - name: Install Pulumi
+        run: |
+          curl -fsSL https://get.pulumi.com/ | bash
+          export PATH=$PATH:$HOME/.pulumi/bin
+      - name: Pulumi Login
+        run: pulumi login
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -68,15 +28,55 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - run: |
           pip install -r requirements.txt
-      - uses: pulumi/actions@v3
-        with:
-          command: |
-            destroy
-          pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
-          stack-name: dev # When using an individual account, only use stack-name.
-          expect-no-changes: true # When using an individual account, only use stack-name.
-        env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          python3 -m venv env
+          source env/bin/activate
+          pulumi stack select dev
+          pulumi preview
+          pulumi up --yes --skip-preview --color auto
+          
+      # - name: Install Pulumi
+      #   run: |
+
+      #   with:
+      #     command: |
+      #       up
+      #     pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
+      #     stack-name: dev # When using an individual account, only use stack-name.
+      #     expect-no-changes: true # When using an individual account, only use stack-name.
+      #   env:
+      #     PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+# name: Pulumi
+# on:
+#   push:
+#     branches:
+#       - main
+# jobs:
+#   infrastructure-setup:
+#     name: Infrastructure-setup
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - uses: actions/setup-python@v2
+#         with:
+#           python-version: 3.9
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v1
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-region: ${{ secrets.AWS_REGION }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#       - run: |
+#           pip install -r requirements.txt
+#       - uses: pulumi/actions@v3
+#         with:
+#           command: |
+#             destroy
+#           pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
+#           stack-name: dev # When using an individual account, only use stack-name.
+#           expect-no-changes: true # When using an individual account, only use stack-name.
+#         env:
+#           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
 
   # Cypress-Test:
