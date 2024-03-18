@@ -19,8 +19,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - run: |
-          python3 -m venv env
-          source env/bin/activate
           pip install -r requirements.txt
       - uses: pulumi/actions@v3
         with:
