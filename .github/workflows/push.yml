@@ -91,9 +91,20 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST
       - id: image
         run:  echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST" >> "$GITHUB_OUTPUT"
-      
+
     #----------------------------------------------
-    # -----  Download and Render Amazon ECS task definition  -----
+    # -----  Download task definition  -----
+    #----------------------------------------------
+      
+      - name: Download task definition
+        env:
+          TASK_DEFINITION_ARN: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_ARN }}
+          ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_ARN }} --query taskDefinition > ${{ env.ECS_SERVICE }}-task-definition.json
+        shell: bash
+    #----------------------------------------------
+    # -----  Render Amazon ECS task definition  -----
     #----------------------------------------------
 
       - name: Fill in the new image ID in the Amazon ECS task definition
@@ -102,15 +113,12 @@ jobs:
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
         id: task-defin
-        run: |
-          aws ecs describe-task-definition --task-definition $TASK_DEFINITION_ARN --query taskDefinition > $ECS_SERVICE-task-definition.json
-        shell: bash
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: "$ECS_SERVICE-task-definition.json"
+          task-definition: ${{ env.ECS_SERVICE }}-task-definition.json
           container-name: $CONTAINER_NAME
           image: ${{ steps.image.outputs.IMAGE }}
-
+    
 
       - name: Deploy Amazon ECS task definition
         env:
