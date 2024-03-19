@@ -272,21 +272,24 @@ rds_instance = aws.rds.Instance("rds",
     db_subnet_group_name=aws.rds.SubnetGroup("rds-subnet-group", subnet_ids=[subnet.id for subnet in private_subnets])
 )
 
-# Store RDS details in SSM Parameter Store
-db_name = aws.ssm.Parameter("dbNameParam",
-    name="/Convexity/Demo/DbName",
-    type="String",
-    value=rds_instance.db_name,
+# Store credentials in AWS Secrets Manager
+secret_manager = aws.secretsmanager.Secret("convexSecret",
+    name="convex-demo-secrets",
+    recovery_window_in_days=0
 )
+
+container_image=repo.repository_url
+log_group_name=log_group.name
+current_region_name=current_region.name
+secret_name=secret_manager.name
+secret_manager_arn=secret_manager.arn
+
+
+# Store RDS details in SSM Parameter Store
 db_endpoint = aws.ssm.Parameter("dbEndpointParam",
     name="/Convexity/Demo/DbEndpoint",
     type="String",
     value=rds_instance.endpoint,
-)
-db_password = aws.ssm.Parameter("dbPasswordParam",
-    name="/Convexity/Demo/DbPassword",
-    type="SecureString",
-    value=rds_instance.password,
 )
 
 # Assume role policy document
@@ -349,6 +352,38 @@ ssm_policy = aws.iam.Policy("ssmPolicy",
     }""",
 )
 
+cloudwatch_policy = aws.iam.Policy("cloudwatchPolicy",
+    policy="""{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Action": ["logs:PutLogEvents"],
+                "Effect": "Allow",
+                "Resource": ["*"]
+            }
+        ]
+    }""",
+)
+
+
+# Define the secret manager policy
+secrets_policy = aws.iam.Policy("secretManagerPolicy",
+    policy=secret_manager.arn.apply(lambda arn: f"""{{
+        "Version": "2012-10-17",
+        "Statement": [
+            {{
+                "Sid": "AccessSecrets",
+                "Effect": "Allow",
+                "Action": [
+                    "secretsmanager:GetSecretValue"
+                ],
+                "Resource": "{arn}"
+            }}
+        ]
+    }}"""),
+)
+
+
 # Define the KMS policy
 kms_policy = aws.iam.Policy("kmsPolicy",
     policy="""{
@@ -388,14 +423,42 @@ ecs_role_policy_attachment = aws.iam.RolePolicyAttachment("ecsSsmRolePolicyAttac
     role=ecs_exec_role.name,
     policy_arn=kms_policy.arn)
 
-container_image=repo.repository_url
-log_group_name=log_group.name
-current_region_name=current_region.name
+# Attach the read secrets policy to the ECS task role
+role_policy_attachment = aws.iam.RolePolicyAttachment("secretsrolePolicyAttachment",
+    role=ecs_exec_role.name,
+    policy_arn=secrets_policy.arn
+)
+
+# Attach put logs policy to the ECS task role
+role_policy_attachment = aws.iam.RolePolicyAttachment("cloudwatchrolePolicyAttachment",
+    role=ecs_exec_role.name,
+    policy_arn=cloudwatch_policy.arn
+)
+
 # Get the value of DB endpoint parameter
 db_endpoint_value = db_endpoint.value
 
-# Get the value of DB password parameter
-db_password_value = db_password.value
+import json
+
+import json
+import pulumi
+
+# Get the values of DB from secret manager
+secret_version = pulumi.Output.all(
+    secret_manager.id,
+    rds_instance.username,
+    rds_instance.password,
+    rds_instance.db_name,
+    rds_instance.address
+).apply(lambda values: aws.secretsmanager.SecretVersion("secretVersion",
+    secret_id=values[0],
+    secret_string=json.dumps({
+        "DB_USER": values[1],
+        "DB_PASSWORD": values[2],
+        "DB_NAME": values[3],
+        "DB_HOST": values[4],
+    })
+))
 
 # ECS task definition
 task_definition = aws.ecs.TaskDefinition("appTaskDef",
@@ -410,9 +473,9 @@ task_definition = aws.ecs.TaskDefinition("appTaskDef",
         operating_system_family="LINUX",
         cpu_architecture="X86_64",
     ),
-    container_definitions=pulumi.Output.all(container_image, log_group_name, current_region_name, db_endpoint_value, db_password_value, container_app_family, container_port).apply(lambda args: json.dumps([
+    container_definitions=pulumi.Output.all(container_image, log_group_name, current_region_name, db_endpoint_value, container_app_family, container_port, secret_name, secret_manager_arn).apply(lambda args: json.dumps([
         {
-            "name": args[5],
+            "name": args[4],
             "image": args[0],
             "logConfiguration": {
                 "logDriver": "awslogs",
@@ -424,9 +487,15 @@ task_definition = aws.ecs.TaskDefinition("appTaskDef",
             },
             "portMappings": [
                 {
-                    "containerPort": args[6],
-                    "hostPort": args[6],
+                    "containerPort": args[5],
+                    "hostPort": args[5],
                     "protocol": "tcp"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": args[6],
+                    "valueFrom": args[7]
                 }
             ],
             "environment": [
@@ -434,10 +503,6 @@ task_definition = aws.ecs.TaskDefinition("appTaskDef",
                     "name": "DATABASE_HOST",
                     "value": args[3]
                 },
-                {
-                    "name": "DATABASE_PASSWORD",
-                    "valueFrom": args[4]
-                }
             ]
         }
     ])),
@@ -522,9 +587,9 @@ autoscaling_policy_mem = aws.appautoscaling.Policy("app-scaling-policy_mem",
 )
 
 # Outputs
-pulumi.export('task_definition_name', task_definition.family)
+pulumi.export('task_definition_revision', task_definition.revision)
+pulumi.export('container_name', container_app_family)
 pulumi.export('repository_url', repo.repository_url)
-pulumi.export('rds_endpoint', rds_instance.endpoint)
 pulumi.export('service_name', ecs_service.name)
 pulumi.export('cluster_name', cluster.name)
 pulumi.export('registry_name', repo.name)
