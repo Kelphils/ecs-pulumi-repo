@@ -8,7 +8,7 @@ jobs:
     name: Infrastructure-setup
     runs-on: ubuntu-latest
     outputs:
-      TASK_DEFINITION_REVISION: ${{ steps.task-def.outputs.TASK_DEFINITION_REVISION }}
+      TASK_DEFINITION_ARN: ${{ steps.task-def.outputs.TASK_DEFINITION_ARN }}
       REPOSITORY_URL: ${{ steps.repo.outputs.REPOSITORY_URL }}
       REGISTRY_NAME: ${{ steps.registry.outputs.REGISTRY_NAME }}
       CONTAINER_NAME: ${{ steps.container.outputs.CONTAINER_NAME }}
@@ -41,7 +41,7 @@ jobs:
           pulumi preview
           pulumi up --yes
       - id: task-def
-        run:  echo "TASK_DEFINITION_REVISION=$(pulumi stack output task_definition_revision)" >> "$GITHUB_OUTPUT"
+        run:  echo "TASK_DEFINITION_ARN=$(pulumi stack output task_definition_arn)" >> "$GITHUB_OUTPUT"
       - id: repo
         run:  echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> "$GITHUB_OUTPUT"
       - id: registry
@@ -53,18 +53,6 @@ jobs:
       - id: cluster
         run:  echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> "$GITHUB_OUTPUT"
           
-      # - name: Install Pulumi
-      #   run: |
-
-      #   with:
-      #     command: |
-      #       up
-      #     pulumi-version: "^3.5.0" # Specify the desired version of Pulumi
-      #     stack-name: dev # When using an individual account, only use stack-name.
-      #     expect-no-changes: true # When using an individual account, only use stack-name.
-      #   env:
-      #     PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-
 
   docker-build-push:
     name: docker-build-push
@@ -103,17 +91,27 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST
       - id: image
         run:  echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST" >> "$GITHUB_OUTPUT"
+      
+    #----------------------------------------------
+    # -----  Download and Render Amazon ECS task definition  -----
+    #----------------------------------------------
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         env:
-          TASK_DEFINITION_REVISION: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_REVISION }}
+          TASK_DEFINITION_ARN: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_ARN }}
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
+          ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
         id: task-defin
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: "$TASK_DEFINITION_REVISION.json"
+          task-definition: $ECS_SERVICE-task-definition.json
           container-name: $CONTAINER_NAME
           image: ${{ steps.image.outputs.IMAGE }}
+      - id: task-def-dow
+        run: |
+          aws ecs describe-task-definition --task-definition $TASK_DEFINITION_ARN --query taskDefinition > $ECS_SERVICE-task-definition.json
+        shell: bash
+    
 
       - name: Deploy Amazon ECS task definition
         env:
