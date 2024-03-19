@@ -41,7 +41,7 @@ jobs:
           pulumi preview
           pulumi up --yes
       - id: task-def
-        run:  echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_arn)" >> "$GITHUB_OUTPUT"
+        run:  echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_name)" >> "$GITHUB_OUTPUT"
       - id: repo
         run:  echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> "$GITHUB_OUTPUT"
       - id: registry
