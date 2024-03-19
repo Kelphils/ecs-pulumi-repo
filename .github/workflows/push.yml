@@ -94,14 +94,15 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ needs.infrastructure-setup.outputs.REGISTRY_NAME }}
           IMAGE_TAG: ${{ github.sha }}
+          LATEST: latest
         run: |
           echo $IMAGE_TAG
           echo $ECR_REPOSITORY
           echo $ECR_REGISTRY
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./welcome-app
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$latest
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST ./welcome-app
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST
       - id: image
-        run:  echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> "$GITHUB_OUTPUT"
+        run:  echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST" >> "$GITHUB_OUTPUT"
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         env:
