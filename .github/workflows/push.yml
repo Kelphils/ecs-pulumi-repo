@@ -78,6 +78,7 @@ jobs:
 
 
       - name: Build and push the tagged docker image to Amazon ECR
+        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ needs.infrastructure-setup.outputs.REGISTRY_NAME }}
@@ -89,8 +90,7 @@ jobs:
           echo $ECR_REGISTRY
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST ./welcome-app
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST
-      - id: image
-        run:  echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST" >> "$GITHUB_OUTPUT"
+          echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST" >> "$GITHUB_OUTPUT"
 
     #----------------------------------------------
     # -----  Download task definition  -----
@@ -118,8 +118,8 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.ECS_SERVICE }}-task-definition.json
-          container-name: $CONTAINER_NAME
-          image: ${{ steps.image.outputs.IMAGE }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
     
 
       - name: Deploy Amazon ECS task definition
