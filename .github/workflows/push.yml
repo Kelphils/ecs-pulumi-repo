@@ -54,8 +54,8 @@ jobs:
         run:  echo "CLUSTER_NAME=$(pulumi stack output cluster_name)" >> "$GITHUB_OUTPUT"
           
 
-  docker-build-push:
-    name: docker-build-push
+  docker-build-push-deploy:
+    name: docker-build-push-deploy
     needs: infrastructure-setup
     runs-on: ubuntu-latest
     steps:
@@ -101,6 +101,8 @@ jobs:
           TASK_DEFINITION_ARN: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_ARN }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
         run: |
+          echo $TASK_DEFINITION_ARN
+          echo $ECS_SERVICE
           aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_ARN }} --query taskDefinition > ${{ env.ECS_SERVICE }}-task-definition.json
         shell: bash
     #----------------------------------------------
