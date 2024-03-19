@@ -8,7 +8,7 @@ jobs:
     name: Infrastructure-setup
     runs-on: ubuntu-latest
     outputs:
-      TASK_DEFINITION_ARN: ${{ steps.task-def.outputs.TASK_DEFINITION_ARN }}
+      TASK_DEFINITION_NAME: ${{ steps.task-def.outputs.TASK_DEFINITION_NAME }}
       REPOSITORY_URL: ${{ steps.repo.outputs.REPOSITORY_URL }}
       REGISTRY_NAME: ${{ steps.registry.outputs.REGISTRY_NAME }}
       CONTAINER_NAME: ${{ steps.container.outputs.CONTAINER_NAME }}
@@ -41,7 +41,7 @@ jobs:
           pulumi preview
           pulumi up --yes
       - id: task-def
-        run:  echo "TASK_DEFINITION_ARN=$(pulumi stack output task_definition_arn)" >> "$GITHUB_OUTPUT"
+        run:  echo "TASK_DEFINITION_NAME=$(pulumi stack output task_definition_arn)" >> "$GITHUB_OUTPUT"
       - id: repo
         run:  echo "REPOSITORY_URL=$(pulumi stack output repository_url)" >> "$GITHUB_OUTPUT"
       - id: registry
@@ -98,12 +98,12 @@ jobs:
       
       - name: Download task definition
         env:
-          TASK_DEFINITION_ARN: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_ARN }}
+          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
         run: |
-          echo $TASK_DEFINITION_ARN
+          echo $TASK_DEFINITION_NAME
           echo $ECS_SERVICE
-          aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_ARN }} --query taskDefinition > ${{ env.ECS_SERVICE }}-task-definition.json
+          aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_NAME }} --query taskDefinition > ${{ env.ECS_SERVICE }}-task-definition.json
         shell: bash
     #----------------------------------------------
     # -----  Render Amazon ECS task definition  -----
@@ -111,7 +111,7 @@ jobs:
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         env:
-          TASK_DEFINITION_ARN: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_ARN }}
+          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
         id: task-defin
