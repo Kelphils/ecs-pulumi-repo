@@ -587,7 +587,7 @@ autoscaling_policy_mem = aws.appautoscaling.Policy("app-scaling-policy_mem",
 )
 
 # Outputs
-pulumi.export('task_definition_name', task_definition.name)
+pulumi.export('task_definition_name', task_definition.family)
 pulumi.export('container_name', container_app_family)
 pulumi.export('repository_url', repo.repository_url)
 pulumi.export('service_name', ecs_service.name)
