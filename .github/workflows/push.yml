@@ -102,16 +102,15 @@ jobs:
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
         id: task-defin
+        run: |
+          aws ecs describe-task-definition --task-definition $TASK_DEFINITION_ARN --query taskDefinition > $ECS_SERVICE-task-definition.json
+        shell: bash
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: "$ECS_SERVICE-task-definition.json"
           container-name: $CONTAINER_NAME
           image: ${{ steps.image.outputs.IMAGE }}
-      - id: task-def-dow
-        run: |
-          aws ecs describe-task-definition --task-definition $TASK_DEFINITION_ARN --query taskDefinition > $ECS_SERVICE-task-definition.json
-        shell: bash
-    
+
 
       - name: Deploy Amazon ECS task definition
         env:
