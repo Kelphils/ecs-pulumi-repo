@@ -8,7 +8,7 @@ jobs:
     name: Infrastructure-setup
     runs-on: ubuntu-latest
     outputs:
-      TASK_DEFINITION_NAME: ${{ steps.task-def.outputs.TASK_DEFINITION_NAME }}
+      TASK_DEFINITION_REVISION: ${{ steps.task-def.outputs.TASK_DEFINITION_REVISION }}
       REPOSITORY_URL: ${{ steps.repo.outputs.REPOSITORY_URL }}
       REGISTRY_NAME: ${{ steps.registry.outputs.REGISTRY_NAME }}
       CONTAINER_NAME: ${{ steps.container.outputs.CONTAINER_NAME }}
