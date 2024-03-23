@@ -1,0 +1,11 @@
+name: ecs-setup
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: An Ecs Cluster for Convexity Demo Project
+config:
+  aws:region: us-east-1
+  pulumi:tags:
+    value:
+      pulumi:template: https://www.pulumi.com/ai/api/project/26448347-fb6d-40cd-a7ce-f96a3a024fb2.zip
