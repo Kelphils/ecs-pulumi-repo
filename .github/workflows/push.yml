@@ -76,8 +76,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Start EC2 runner
         id: start-ec2-runner
         env:
@@ -90,9 +90,9 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ami-00182ebbc90674cc6
           ec2-instance-type: t3.medium
-          subnet-id: ${{ env.SUBNET_ID }}
-          security-group-id: ${{ env.ECS_SG_ID }}
-          iam-role-name: ${{ env.EC2_ROLE }} # optional, requires additional permissions
+          subnet-id: $SUBNET_ID
+          security-group-id: ECS_SG_ID
+          iam-role-name: $EC2_ROLE # optional, requires additional permissions
           aws-resource-tags: > # optional, requires additional permissions
             [
               {"Key": "Name", "Value": "ec2-github-runner"},
