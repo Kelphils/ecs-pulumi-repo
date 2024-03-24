@@ -90,9 +90,9 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ami-00182ebbc90674cc6
           ec2-instance-type: t3.medium
-          subnet-id: $SUBNET_ID
-          security-group-id: $ECS_SG_ID
-          iam-role-name: $EC2_ROLE # optional, requires additional permissions
+          subnet-id: ${{ env.SUBNET_ID }}
+          security-group-id: ${{ env.ECS_SG_ID }}
+          iam-role-name: ${{ env.EC2_ROLE }} # optional, requires additional permissions
           aws-resource-tags: > # optional, requires additional permissions
             [
               {"Key": "Name", "Value": "ec2-github-runner"},
