@@ -14,9 +14,9 @@ jobs:
       CONTAINER_NAME: ${{ steps.container.outputs.CONTAINER_NAME }}
       ECS_SERVICE: ${{ steps.service.outputs.ECS_SERVICE }}
       CLUSTER_NAME: ${{ steps.cluster.outputs.CLUSTER_NAME }}
-      ECS_SG_ID: ${{ steps.cluster.outputs.ECS_SG_ID }}
-      SUBNET_ID: ${{ steps.cluster.outputs.SUBNET_ID }}
-      EC2_ROLE: ${{ steps.cluster.outputs.EC2_ROLE }}
+      ECS_SG_ID: ${{ steps.security-group.outputs.ECS_SG_ID }}
+      SUBNET_ID: ${{ steps.subnet-id.outputs.SUBNET_ID }}
+      EC2_ROLE: ${{ steps.ec2-role.outputs.EC2_ROLE }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v5
@@ -90,9 +90,9 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ami-00182ebbc90674cc6
           ec2-instance-type: t3.medium
-          subnet-id: ${{ env.SUBNET_ID }}
-          security-group-id: ${{ env.ECS_SG_ID }}
-          iam-role-name: ${{ env.EC2_ROLE }}# optional, requires additional permissions
+          subnet-id: $SUBNET_ID
+          security-group-id: $ECS_SG_ID
+          iam-role-name: $EC2_ROLE # optional, requires additional permissions
           aws-resource-tags: > # optional, requires additional permissions
             [
               {"Key": "Name", "Value": "ec2-github-runner"},
