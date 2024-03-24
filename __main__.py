@@ -586,11 +586,83 @@ autoscaling_policy_mem = aws.appautoscaling.Policy("app-scaling-policy_mem",
     opts=pulumi.ResourceOptions(depends_on=[ecs_target, autoscaling_policy_cpu])
 )
 
+# Define the EC2 instance assume role
+runner_role = aws.iam.Role("ec2RunnerRole",
+    name="github-ec2-runner-role",
+    description="Policy that allows access to some services for github runner",
+    assume_role_policy="""{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }""",
+)
+
+
+# Define the secret manager policy
+ec2_secrets_policy = aws.iam.Policy("ec2secretManagerPolicy",
+    policy="""{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "AccessSecrets",
+                "Effect": "Allow",
+                "Action": [
+                    "secretsmanager:GetSecretValue"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }""",
+)
+
+
+# Attach ssm policy to the github ec2 runner
+# ec2_ssm_attachment = aws.iam.RolePolicyAttachment("ec2ssmPolicyAttachment",
+#     role=runner_role.name,
+#     policy_arn=ssm_policy.arn,
+# )
+
+# Attach kms policy to github ec2 runner
+ec2_kms_attachment = aws.iam.RolePolicyAttachment("ec2kmsPolicyAttachment",
+    role=runner_role.name,
+    policy_arn=kms_policy.arn,
+)
+
+# Attach the read secrets policy to github ec2 runner
+ec2_role_policy_attachment = aws.iam.RolePolicyAttachment("ec2secretsrolePolicyAttachment",
+    role=runner_role.name,
+    policy_arn=ec2_secrets_policy.arn
+)
+
+# Attach ecrFullpermissionPolicy to github ec2 runner
+ecr_builder_policy_attachment = aws.iam.RolePolicyAttachment("ec2ImageBuildRolePolicyAttachment",
+    role=runner_role.name,
+    policy_arn="arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilderECRContainerBuilds")
+
+# Attach ecrFullpermissionPolicy to github ec2 runner
+session_manager_policy_attachment = aws.iam.RolePolicyAttachment("ec2SessionmanagerPolicyAttachment",
+    role=runner_role.name,
+    policy_arn="arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore")
+
+github_runner_profile = aws.iam.InstanceProfile("runner_profile",
+    name="github_runner_profile",
+    role=runner_role.name)
+
 # Outputs
-pulumi.export('task_definition_name', task_definition.family)
-pulumi.export('container_name', container_app_family)
-pulumi.export('repository_url', repo.repository_url)
-pulumi.export('service_name', ecs_service.name)
-pulumi.export('cluster_name', cluster.name)
-pulumi.export('registry_name', repo.name)
-pulumi.export('ecs_endpoint', subdomain)
+pulumi.export('task_definition_name', task_definition.family),
+pulumi.export('container_name', container_app_family),
+pulumi.export('repository_url', repo.repository_url),
+pulumi.export('service_name', ecs_service.name),
+pulumi.export('cluster_name', cluster.name),
+pulumi.export('registry_name', repo.name),
+pulumi.export('ecs_endpoint', subdomain),
+pulumi.export('ecs_security_group_id', ecs_task_security_group.id),
+pulumi.export("second_private_subnet", private_subnets[1].id),
+pulumi.export('github_runner_role', github_runner_profile.name)
