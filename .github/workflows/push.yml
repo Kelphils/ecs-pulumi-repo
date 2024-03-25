@@ -17,6 +17,7 @@ jobs:
       ECS_SG_ID: ${{ steps.security-group.outputs.ECS_SG_ID }}
       SUBNET_ID: ${{ steps.subnet-id.outputs.SUBNET_ID }}
       EC2_ROLE: ${{ steps.ec2-role.outputs.EC2_ROLE }}
+      IMAGE: ${{ steps.build-image.outputs.IMAGE }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v5
@@ -184,12 +185,13 @@ jobs:
           TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
+          IMAGE: ${{ needs.infrastructure-setup.outputs.IMAGE }}
         id: task-defin
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.ECS_SERVICE }}-task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.IMAGE }}
+          image: ${{ env.IMAGE }}
     
 
       - name: Deploy Amazon ECS task definition
