@@ -17,7 +17,6 @@ jobs:
       ECS_SG_ID: ${{ steps.security-group.outputs.ECS_SG_ID }}
       SUBNET_ID: ${{ steps.subnet-id.outputs.SUBNET_ID }}
       EC2_ROLE: ${{ steps.ec2-role.outputs.EC2_ROLE }}
-      IMAGE: ${{ steps.build-image.outputs.IMAGE }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v5
@@ -102,6 +101,8 @@ jobs:
 
   docker-build-push-deploy:
     name: docker-build-push-deploy
+    outputs: 
+      IMAGE: ${{ steps.build-image.outputs.IMAGE }}
     needs: 
       - infrastructure-setup
       - start-runner # required to start the main job when the runner is ready
@@ -185,7 +186,7 @@ jobs:
           TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
-          IMAGE: ${{ needs.infrastructure-setup.outputs.IMAGE }}
+          IMAGE: ${{ needs.docker-build-push-deploy.outputs.IMAGE }}
         id: task-defin
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
