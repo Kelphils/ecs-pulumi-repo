@@ -63,7 +63,7 @@ jobs:
         run:  echo "EC2_ROLE=$(pulumi stack output github_runner_role)" >> "$GITHUB_OUTPUT"
 
 
-  
+  # https://github.com/marketplace/actions/on-demand-self-hosted-aws-ec2-runner-for-github-actions
   start-runner:
     name: Start self-hosted EC2 runner
     needs: infrastructure-setup
@@ -165,39 +165,39 @@ jobs:
     # -----  Download task definition  -----
     #----------------------------------------------
       
-    #   - name: Download task definition
-    #     env:
-    #       TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
-    #       ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
-    #     run: |
-    #       echo $TASK_DEFINITION_NAME
-    #       echo $ECS_SERVICE
-    #       aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_NAME }} --query taskDefinition > ${{ env.ECS_SERVICE }}-task-definition.json
-    #     shell: bash
-    # #----------------------------------------------
-    # # -----  Render Amazon ECS task definition  -----
-    # #----------------------------------------------
+      - name: Download task definition
+        env:
+          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
+          ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
+        run: |
+          echo $TASK_DEFINITION_NAME
+          echo $ECS_SERVICE
+          aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_NAME }} --query taskDefinition > ${{ env.ECS_SERVICE }}-task-definition.json
+        shell: bash
+    #----------------------------------------------
+    # -----  Render Amazon ECS task definition  -----
+    #----------------------------------------------
 
-    #   - name: Fill in the new image ID in the Amazon ECS task definition
-    #     env:
-    #       TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
-    #       CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
-    #       ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
-    #     id: task-defin
-    #     uses: aws-actions/amazon-ecs-render-task-definition@v1
-    #     with:
-    #       task-definition: ${{ env.ECS_SERVICE }}-task-definition.json
-    #       container-name: ${{ env.CONTAINER_NAME }}
-    #       image: ${{ steps.build-image.outputs.image }}
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        env:
+          TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
+          CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
+          ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
+        id: task-defin
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.ECS_SERVICE }}-task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
     
 
-    #   - name: Deploy Amazon ECS task definition
-    #     env:
-    #       ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
-    #       CLUSTER_NAME: ${{ needs.infrastructure-setup.outputs.CLUSTER_NAME }}
-    #     uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-    #     with:
-    #       task-definition: ${{ steps.task-defin.outputs.task-definition }}
-    #       service: ${{ env.ECS_SERVICE }}
-    #       cluster: ${{ env.CLUSTER_NAME }}
-    #       wait-for-service-stability: true
+      - name: Deploy Amazon ECS task definition
+        env:
+          ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
+          CLUSTER_NAME: ${{ needs.infrastructure-setup.outputs.CLUSTER_NAME }}
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-defin.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.CLUSTER_NAME }}
+          wait-for-service-stability: true
