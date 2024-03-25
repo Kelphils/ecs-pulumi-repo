@@ -101,8 +101,6 @@ jobs:
 
   docker-build-push-deploy:
     name: docker-build-push-deploy
-    outputs: 
-      IMAGE: ${{ steps.build-image.outputs.IMAGE }}
     needs: 
       - infrastructure-setup
       - start-runner # required to start the main job when the runner is ready
@@ -141,29 +139,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$LATEST
           echo "IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST" >> "$GITHUB_OUTPUT"
 
-  stop-runner:
-    name: Stop self-hosted EC2 runner
-    needs:
-      - infrastructure-setup
-      - start-runner # required to get output from the start-runner job
-      - docker-build-push-deploy # required to wait when the main job is done
-    runs-on: ubuntu-latest
-    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@v2
-        with:
-          mode: stop
-          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          label: ${{ needs.start-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
-
     #----------------------------------------------
     # -----  Download task definition  -----
     #----------------------------------------------
@@ -186,13 +161,12 @@ jobs:
           TASK_DEFINITION_NAME: ${{ needs.infrastructure-setup.outputs.TASK_DEFINITION_NAME }}
           CONTAINER_NAME: ${{ needs.infrastructure-setup.outputs.CONTAINER_NAME }}
           ECS_SERVICE: ${{ needs.infrastructure-setup.outputs.ECS_SERVICE }}
-          IMAGE: ${{ needs.docker-build-push-deploy.outputs.IMAGE }}
         id: task-defin
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.ECS_SERVICE }}-task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ env.IMAGE }}
+          image: ${{ steps.build-image.outputs.IMAGE }}
     
 
       - name: Deploy Amazon ECS task definition
@@ -205,3 +179,25 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.CLUSTER_NAME }}
           wait-for-service-stability: true
+
+  stop-runner:
+    name: Stop self-hosted EC2 runner
+    needs:
+      - start-runner # required to get output from the start-runner job
+      - docker-build-push-deploy # required to wait when the main job is done
+    runs-on: ubuntu-latest
+    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
